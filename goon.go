@@ -19,7 +19,7 @@ var symbols map[string]int;
 
 func main() {
   // TODO: move this out
-  symbols = make(map[string]int, 100);
+  symbols = make(map[string]int, 1024);
 
   reader := bufio.NewReader(os.Stdin)
 
@@ -65,7 +65,6 @@ func Eval(node *C.gn_ast_node_t) int {
     return int(node.value);
   } else if node.node_type == C.GN_AST_SYMBOL {
     symbol := C.GoString(C.gn_get_symbol(C.gn_global_context(), node))
-    fmt.Printf("symbol is: %s\n", symbol)
     return symbols[symbol]
   }
 
@@ -77,7 +76,6 @@ func Eval(node *C.gn_ast_node_t) int {
     symbol := C.GoString(C.gn_get_symbol(C.gn_global_context(), left))
     value := Eval(right)
 
-    fmt.Printf("symbol is: %s, value is %d\n", symbol, value)
     symbols[symbol] = value
     return value
   case C.GN_AST_ADD:

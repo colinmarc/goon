@@ -75,9 +75,12 @@ static void gn_number_node(gn_parser_context_t *context, char *text) {
 
 static void gn_symbol_node(gn_parser_context_t *context, char *text) {
     int i = context->next_symbol++;
-    printf("saving symbol %d: %s\n", i, text);
-    context->symbols[i] = text;
-    printf("symbols[0]: %s\n", context->symbols[0]);
+
+    int text_len = strlen(text);
+    char *symbol = malloc(text_len * sizeof(*symbol));
+    strncpy(symbol, text, text_len);
+
+    context->symbols[i] = symbol;
 
     gn_push(context, gn_create_node(GN_AST_SYMBOL, i));
 }
@@ -138,7 +141,5 @@ gn_ast_node_t *gn_child_at(gn_ast_node_t *parent, int idx) {
 }
 
 char *gn_get_symbol(gn_parser_context_t *context, gn_ast_node_t *node) {
-    //printf("getting symbol %d: %s\n", node->value, context->symbols[node->value]);
-    printf("symbols[0]: %s\n", context->symbols[0]);
     return context->symbols[node->value];
 }

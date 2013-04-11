@@ -3,7 +3,8 @@
 Stmt <- SPACE Expr EOL
       / (!EOL .)* EOL { gn_parser_context_t *context = gn_global_context(); context->error = 1 }
 
-Expr <- ID { gn_symbol_node(gn_global_context(), yytext) } ASSIGN Sum { gn_reduce(gn_global_context(), GN_AST_ASSIGN, 2) }
+Expr <- ID { gn_symbol_node(gn_global_context(), yytext) }
+          ASSIGN Sum { gn_reduce(gn_global_context(), GN_AST_ASSIGN, 2) }
       / Sum
 
 Sum <- Product ( PLUS Product { gn_reduce(gn_global_context(), GN_AST_ADD, 2) }
