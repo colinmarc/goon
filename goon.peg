@@ -1,0 +1,34 @@
+# Grammar
+
+Stmt <- SPACE Expr EOL
+      / (!EOL .)* EOL { gn_parser_context_t *context = gn_global_context(); context->error = 1 }
+
+Expr <- ID { gn_symbol_node(gn_global_context(), yytext) } ASSIGN Sum { gn_reduce(gn_global_context(), GN_AST_ASSIGN, 2) }
+      / Sum
+
+Sum <- Product ( PLUS Product { gn_reduce(gn_global_context(), GN_AST_ADD, 2) }
+               / MINUS Product { gn_reduce(gn_global_context(), GN_AST_SUBTRACT, 2) }
+               )*
+
+Product <- Value ( TIMES  Value { gn_reduce(gn_global_context(), GN_AST_MULTIPLY, 2) }
+                 / DIVIDED_BY Value { gn_reduce(gn_global_context(), GN_AST_DIVIDE, 2) }
+                 )*
+
+Value <- NUMBER { gn_number_node(gn_global_context(), yytext) }
+       / ID { gn_symbol_node(gn_global_context(), yytext) }
+       / OPEN Expr CLOSE
+
+# Lexemes
+
+NUMBER <- < [0-9]+ > SPACE
+ID <- < [a-zA-Z_]+ > SPACE
+ASSIGN <- '=' SPACE
+PLUS <- '+' SPACE
+MINUS <- '-' SPACE
+TIMES <- '*' SPACE
+DIVIDED_BY <- '/' SPACE
+OPEN <- '(' SPACE
+CLOSE <- ')' SPACE
+
+SPACE <- [ \t]*
+EOL <- '\n' / '\r\n' / '\r' / ';'
