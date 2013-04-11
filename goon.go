@@ -9,7 +9,6 @@ import (
 )
 
 /*
-#cgo CFLAGS: -Wno-error
 #include <stdlib.h>
 #include "parser.c"
 */
