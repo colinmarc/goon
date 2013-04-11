@@ -1,0 +1,4 @@
+*.peg.c
+*.o
+test
+goon
