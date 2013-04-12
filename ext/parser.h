@@ -1,4 +1,5 @@
 typedef enum {
+    GN_AST_NIL,
     GN_AST_NUMBER,
     GN_AST_BOOLEAN,
     GN_AST_SYMBOL,
@@ -9,7 +10,9 @@ typedef enum {
     GN_AST_MULTIPLY,
     GN_AST_DIVIDE,
     GN_AST_COMPARE,
-    GN_AST_INVERSE_COMPARE
+    GN_AST_INVERSE_COMPARE,
+    GN_AST_AND,
+    GN_AST_OR
 } gn_ast_node_type_t;
 
 typedef struct gn_ast_node_t {

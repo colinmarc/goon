@@ -20,14 +20,19 @@ func main() {
         fmt.Printf("quitting...\n")
         break
       } else {
-        fmt.Printf("err: %s", err)
+        fmt.Printf("err: %s\n", err)
       }
       break
     }
 
     if len(raw_line) > 1 {
-      res, _ := goon.Parse(raw_line)
-      fmt.Printf("%s\n", res.ToString())
+      res, err := goon.Parse(raw_line)
+
+      if err != nil {
+        fmt.Printf("err: %s\n", err)
+      } else {
+        fmt.Printf("%s\n", res.ToString())
+      }
     }
   }
 }

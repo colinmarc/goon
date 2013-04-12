@@ -72,6 +72,10 @@ static void gn_reduce(gn_parser_context_t *context,
     gn_push(context, node);
 }
 
+static void gn_nil_node(gn_parser_context_t *context) {
+    gn_push(context, gn_create_node(GN_AST_NIL, -1));
+}
+
 static void gn_number_node(gn_parser_context_t *context, char *text) {
     int value = atoi(text);
     gn_push(context, gn_create_node(GN_AST_NUMBER, value));

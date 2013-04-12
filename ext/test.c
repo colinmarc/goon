@@ -26,7 +26,7 @@ char *format_node(gn_ast_node_t *node) {
 }
 
 int main() {
-    char *s = "foo = 5\n";
+    char *s = "true || false\n";
     gn_ast_node_t *root = gn_parse(gn_global_context(), s, strlen(s));
     printf("%s\n", format_node(root));
 

@@ -1,6 +1,6 @@
 # Grammar
 
-Stmt <- SPACE Expr EOL
+Stmt <- (SPACE Expr EOL)+
       / (!EOL .)* EOL
           { gn_set_error(gn_global_context(), 1); }
 
@@ -17,12 +17,19 @@ Sum <- Product (
            { gn_reduce(gn_global_context(), GN_AST_SUBTRACT, 2) }
        )*
 
-Product <- Equality (
-             TIMES Equality
+Product <- Logical (
+             TIMES Logical
               { gn_reduce(gn_global_context(), GN_AST_MULTIPLY, 2) }
-           / DIVIDED_BY Equality
+           / DIVIDED_BY Logical
               { gn_reduce(gn_global_context(), GN_AST_DIVIDE, 2) }
            )*
+
+Logical <- Equality (
+         AND Equality
+           { gn_reduce(gn_global_context(), GN_AST_AND, 2) }
+       / OR Equality
+           { gn_reduce(gn_global_context(), GN_AST_OR, 2) }
+       )*
 
 Equality <- Value (
               EQUALS Value
@@ -31,7 +38,8 @@ Equality <- Value (
                 { gn_reduce(gn_global_context(), GN_AST_INVERSE_COMPARE, 2) }
             )*
 
-Value <- NUMBER { gn_number_node(gn_global_context(), yytext) }
+Value <- NIL { gn_nil_node(gn_global_context()) }
+       / NUMBER { gn_number_node(gn_global_context(), yytext) }
        / TRUE { gn_bool_node(gn_global_context(), 1) }
        / FALSE { gn_bool_node(gn_global_context(), 0) }
        / ID { gn_symbol_node(gn_global_context(), yytext) }
@@ -39,6 +47,7 @@ Value <- NUMBER { gn_number_node(gn_global_context(), yytext) }
 
 # Lexemes
 
+NIL <- 'nil' SPACE
 NUMBER <- < [0-9]+ > SPACE
 ID <- < [a-zA-Z_]+ > SPACE
 TRUE <- 'true' SPACE
@@ -48,10 +57,12 @@ PLUS <- '+' SPACE
 MINUS <- '-' SPACE
 TIMES <- '*' SPACE
 DIVIDED_BY <- '/' SPACE
+AND <- 'and' SPACE
+OR <- 'or' SPACE
 EQUALS <- '==' SPACE
 DOES_NOT_EQUAL <- '!='
 OPEN <- '(' SPACE
 CLOSE <- ')' SPACE
 
 SPACE <- [ \t]*
-EOL <- '\n' / '\r\n' / '\r' / ';'
+EOL <- '\n'
