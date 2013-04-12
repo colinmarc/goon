@@ -22,6 +22,10 @@ gn_parser_context_t *gn_global_context() {
     return gn_context;
 }
 
+static void gn_set_error(gn_parser_context_t *context, int error) {
+    context->error = error;
+}
+
 static gn_ast_node_t *gn_create_node(gn_ast_node_type_t node_type, int value) {
     gn_ast_node_t *node = malloc(sizeof(*node));
 
@@ -71,6 +75,10 @@ static void gn_reduce(gn_parser_context_t *context,
 static void gn_number_node(gn_parser_context_t *context, char *text) {
     int value = atoi(text);
     gn_push(context, gn_create_node(GN_AST_NUMBER, value));
+}
+
+static void gn_bool_node(gn_parser_context_t *context, int value) {
+    gn_push(context, gn_create_node(GN_AST_BOOLEAN, value));
 }
 
 static void gn_symbol_node(gn_parser_context_t *context, char *text) {
