@@ -1,21 +1,39 @@
 # Grammar
 
 Stmt <- SPACE Expr EOL
-      / (!EOL .)* EOL { gn_parser_context_t *context = gn_global_context(); context->error = 1 }
+      / (!EOL .)* EOL
+          { gn_set_error(gn_global_context(), 1); }
 
-Expr <- ID { gn_symbol_node(gn_global_context(), yytext) }
-          ASSIGN Sum { gn_reduce(gn_global_context(), GN_AST_ASSIGN, 2) }
+Expr <- ID
+          { gn_symbol_node(gn_global_context(), yytext) }
+        ASSIGN Sum
+          { gn_reduce(gn_global_context(), GN_AST_ASSIGN, 2) }
       / Sum
 
-Sum <- Product ( PLUS Product { gn_reduce(gn_global_context(), GN_AST_ADD, 2) }
-               / MINUS Product { gn_reduce(gn_global_context(), GN_AST_SUBTRACT, 2) }
-               )*
+Sum <- Product (
+         PLUS Product
+           { gn_reduce(gn_global_context(), GN_AST_ADD, 2) }
+       / MINUS Product
+           { gn_reduce(gn_global_context(), GN_AST_SUBTRACT, 2) }
+       )*
 
-Product <- Value ( TIMES  Value { gn_reduce(gn_global_context(), GN_AST_MULTIPLY, 2) }
-                 / DIVIDED_BY Value { gn_reduce(gn_global_context(), GN_AST_DIVIDE, 2) }
-                 )*
+Product <- Equality (
+             TIMES Equality
+              { gn_reduce(gn_global_context(), GN_AST_MULTIPLY, 2) }
+           / DIVIDED_BY Equality
+              { gn_reduce(gn_global_context(), GN_AST_DIVIDE, 2) }
+           )*
+
+Equality <- Value (
+              EQUALS Value
+                { gn_reduce(gn_global_context(), GN_AST_COMPARE, 2) }
+            / DOES_NOT_EQUAL Value
+                { gn_reduce(gn_global_context(), GN_AST_INVERSE_COMPARE, 2) }
+            )*
 
 Value <- NUMBER { gn_number_node(gn_global_context(), yytext) }
+       / TRUE { gn_bool_node(gn_global_context(), 1) }
+       / FALSE { gn_bool_node(gn_global_context(), 0) }
        / ID { gn_symbol_node(gn_global_context(), yytext) }
        / OPEN Expr CLOSE
 
@@ -23,11 +41,15 @@ Value <- NUMBER { gn_number_node(gn_global_context(), yytext) }
 
 NUMBER <- < [0-9]+ > SPACE
 ID <- < [a-zA-Z_]+ > SPACE
+TRUE <- 'true' SPACE
+FALSE <- 'false' SPACE
 ASSIGN <- '=' SPACE
 PLUS <- '+' SPACE
 MINUS <- '-' SPACE
 TIMES <- '*' SPACE
 DIVIDED_BY <- '/' SPACE
+EQUALS <- '==' SPACE
+DOES_NOT_EQUAL <- '!='
 OPEN <- '(' SPACE
 CLOSE <- ')' SPACE
 
