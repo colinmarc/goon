@@ -8,6 +8,8 @@ Stmt <- ID
           { gn_symbol_node(yytext) }
         ASSIGN Expr
           { gn_reduce(GN_AST_ASSIGN, 2) }
+      / PRINT < . >
+          { printf("print: %s\n", yytext) }
       / Expr
 
 Expr <- Sum
@@ -68,3 +70,6 @@ CLOSE <- ')' SPACE
 
 SPACE <- [ \t]*
 EOL <- '\n'
+
+// TODO: remove
+PRINT <- 'print' SPACE
