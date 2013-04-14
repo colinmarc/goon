@@ -1,8 +1,9 @@
 # Grammar
 
-Goon <- (SPACE Stmt EOL)+
-      / (!EOL .)* EOL
-          { gn_set_error(1); }
+Stmts <- (
+           SPACE Stmt EOL
+         / (!EOL .)* EOL { gn_set_error(1); }
+         )+
 
 Stmt <- ID
           { gn_symbol_node(yytext) }
@@ -12,21 +13,7 @@ Stmt <- ID
           { printf("print: %s\n", yytext) }
       / Expr
 
-Expr <- Sum
-
-Sum <- Product (
-         PLUS Product
-           { gn_reduce(GN_AST_ADD, 2) }
-       / MINUS Product
-           { gn_reduce(GN_AST_SUBTRACT, 2) }
-       )*
-
-Product <- Logical (
-             TIMES Logical
-              { gn_reduce(GN_AST_MULTIPLY, 2) }
-           / DIVIDED_BY Logical
-              { gn_reduce(GN_AST_DIVIDE, 2) }
-           )*
+Expr <- Logical
 
 Logical <- Equality (
          AND Equality
@@ -35,12 +22,26 @@ Logical <- Equality (
            { gn_reduce(GN_AST_OR, 2) }
        )*
 
-Equality <- Value (
-              EQUALS Value
+Equality <- Sum (
+              EQUALS Sum
                 { gn_reduce(GN_AST_COMPARE, 2) }
-            / DOES_NOT_EQUAL Value
+            / DOES_NOT_EQUAL Sum
                 { gn_reduce(GN_AST_INVERSE_COMPARE, 2) }
             )*
+
+Sum <- Product (
+         PLUS Product
+           { gn_reduce(GN_AST_ADD, 2) }
+       / MINUS Product
+           { gn_reduce(GN_AST_SUBTRACT, 2) }
+       )*
+
+Product <- Value (
+             TIMES Value
+              { gn_reduce(GN_AST_MULTIPLY, 2) }
+           / DIVIDED_BY Value
+              { gn_reduce(GN_AST_DIVIDE, 2) }
+           )*
 
 Value <- NIL { gn_nil_node() }
        / NUMBER { gn_number_node(yytext) }
@@ -71,5 +72,5 @@ CLOSE <- ')' SPACE
 SPACE <- [ \t]*
 EOL <- '\n'
 
-// TODO: remove
+# TODO: remove
 PRINT <- 'print' SPACE
