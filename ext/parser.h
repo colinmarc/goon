@@ -37,5 +37,5 @@ typedef struct {
 } gn_parser_context_t;
 
 gn_parser_context_t *gn_global_context();
-gn_ast_node_t *gn_parse(gn_parser_context_t *context, char *buffer, int len);
-char *gn_get_symbol(gn_parser_context_t *context, gn_ast_node_t *node);
+gn_ast_node_t *gn_parse(char *buffer, int len);
+char *gn_get_symbol(gn_ast_node_t *node);

@@ -25,7 +25,7 @@ func Parse(line []byte) (*Value, error) {
   cs_len := C.int(len(line))
   defer C.free(unsafe.Pointer(cs))
 
-  root := C.gn_parse(C.gn_global_context(), cs, cs_len)
+  root := C.gn_parse(cs, cs_len)
 
   if unsafe.Pointer(root) == nil {
     return nil, SyntaxError
@@ -54,11 +54,11 @@ func Eval(node *C.gn_ast_node_t) *Value {
       return &Value{false, TYPE_BOOL}
     }
   } else if node.node_type == C.GN_AST_SYMBOL {
-    symbol := C.GoString(C.gn_get_symbol(C.gn_global_context(), node))
+    symbol := C.GoString(C.gn_get_symbol(node))
     return symbols[symbol]
   } else if node.node_type == C.GN_AST_ASSIGN {
     left := C.gn_child_at(node, 0)
-    symbol := C.GoString(C.gn_get_symbol(C.gn_global_context(), left))
+    symbol := C.GoString(C.gn_get_symbol(left))
     value := Eval(C.gn_child_at(node, 1))
 
     symbols[symbol] = value

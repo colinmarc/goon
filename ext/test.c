@@ -26,8 +26,8 @@ char *format_node(gn_ast_node_t *node) {
 }
 
 int main() {
-    char *s = "true || false\n";
-    gn_ast_node_t *root = gn_parse(gn_global_context(), s, strlen(s));
+    char *s = "1 + 2\n";
+    gn_ast_node_t *root = gn_parse(s, strlen(s));
     printf("%s\n", format_node(root));
 
     // s = "a = 1\n";

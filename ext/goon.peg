@@ -1,48 +1,50 @@
 # Grammar
 
-Stmt <- (SPACE Expr EOL)+
+Goon <- (SPACE Stmt EOL)+
       / (!EOL .)* EOL
-          { gn_set_error(gn_global_context(), 1); }
+          { gn_set_error(1); }
 
-Expr <- ID
-          { gn_symbol_node(gn_global_context(), yytext) }
-        ASSIGN Sum
-          { gn_reduce(gn_global_context(), GN_AST_ASSIGN, 2) }
-      / Sum
+Stmt <- ID
+          { gn_symbol_node(yytext) }
+        ASSIGN Expr
+          { gn_reduce(GN_AST_ASSIGN, 2) }
+      / Expr
+
+Expr <- Sum
 
 Sum <- Product (
          PLUS Product
-           { gn_reduce(gn_global_context(), GN_AST_ADD, 2) }
+           { gn_reduce(GN_AST_ADD, 2) }
        / MINUS Product
-           { gn_reduce(gn_global_context(), GN_AST_SUBTRACT, 2) }
+           { gn_reduce(GN_AST_SUBTRACT, 2) }
        )*
 
 Product <- Logical (
              TIMES Logical
-              { gn_reduce(gn_global_context(), GN_AST_MULTIPLY, 2) }
+              { gn_reduce(GN_AST_MULTIPLY, 2) }
            / DIVIDED_BY Logical
-              { gn_reduce(gn_global_context(), GN_AST_DIVIDE, 2) }
+              { gn_reduce(GN_AST_DIVIDE, 2) }
            )*
 
 Logical <- Equality (
          AND Equality
-           { gn_reduce(gn_global_context(), GN_AST_AND, 2) }
+           { gn_reduce(GN_AST_AND, 2) }
        / OR Equality
-           { gn_reduce(gn_global_context(), GN_AST_OR, 2) }
+           { gn_reduce(GN_AST_OR, 2) }
        )*
 
 Equality <- Value (
               EQUALS Value
-                { gn_reduce(gn_global_context(), GN_AST_COMPARE, 2) }
+                { gn_reduce(GN_AST_COMPARE, 2) }
             / DOES_NOT_EQUAL Value
-                { gn_reduce(gn_global_context(), GN_AST_INVERSE_COMPARE, 2) }
+                { gn_reduce(GN_AST_INVERSE_COMPARE, 2) }
             )*
 
-Value <- NIL { gn_nil_node(gn_global_context()) }
-       / NUMBER { gn_number_node(gn_global_context(), yytext) }
-       / TRUE { gn_bool_node(gn_global_context(), 1) }
-       / FALSE { gn_bool_node(gn_global_context(), 0) }
-       / ID { gn_symbol_node(gn_global_context(), yytext) }
+Value <- NIL { gn_nil_node() }
+       / NUMBER { gn_number_node(yytext) }
+       / TRUE { gn_bool_node(1) }
+       / FALSE { gn_bool_node(0) }
+       / ID { gn_symbol_node(yytext) }
        / OPEN Expr CLOSE
 
 # Lexemes

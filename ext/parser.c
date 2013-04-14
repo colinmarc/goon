@@ -5,25 +5,18 @@
 
 gn_parser_context_t *gn_context;
 
-static void gn_init_context(gn_parser_context_t *context) {
-    context->position = 0;
-    context->next_symbol = 0;
-    context->buffer_len = 0;
-    context->buffer_offset = 0;
-    context->error = 0;
+static void gn_init_context() {
+    gn_context = malloc(sizeof(*gn_context));
+
+    gn_context->position = 0;
+    gn_context->next_symbol = 0;
+    gn_context->buffer_len = 0;
+    gn_context->buffer_offset = 0;
+    gn_context->error = 0;
 }
 
-gn_parser_context_t *gn_global_context() {
-    if (gn_context == NULL) {
-        gn_context = malloc(sizeof(*gn_context));
-        gn_init_context(gn_context);
-    }
-
-    return gn_context;
-}
-
-static void gn_set_error(gn_parser_context_t *context, int error) {
-    context->error = error;
+static void gn_set_error(int error) {
+    gn_context->error = error;
 }
 
 static gn_ast_node_t *gn_create_node(gn_ast_node_type_t node_type, int value) {
@@ -36,32 +29,31 @@ static gn_ast_node_t *gn_create_node(gn_ast_node_type_t node_type, int value) {
     return node;
 }
 
-static gn_ast_node_t *gn_top(gn_parser_context_t *context) {
-    return context->stack[context->position - 1];
+static gn_ast_node_t *gn_top() {
+    return gn_context->stack[gn_context->position - 1];
 }
 
-static void gn_push(gn_parser_context_t *context, gn_ast_node_t *node)	{
+static void gn_push(gn_ast_node_t *node)	{
     //printf("pushing %d/%d/%d\n", node->node_type, node->value, node->num_children);
-    context->stack[context->position] = node;
-    context->position++;
+    gn_context->stack[gn_context->position] = node;
+    gn_context->position++;
 }
 
-static gn_ast_node_t *gn_pop(gn_parser_context_t *context) {
-    if (context->position <= 0) return NULL;
+static gn_ast_node_t *gn_pop() {
+    if (gn_context->position <= 0) return NULL;
 
-    gn_ast_node_t *node = gn_top(context);
-    context->position--;
+    gn_ast_node_t *node = gn_top();
+    gn_context->position--;
     return node;
 }
 
-static void gn_reduce(gn_parser_context_t *context,
-                      gn_ast_node_type_t node_type, int num_children) {
+static void gn_reduce(gn_ast_node_type_t node_type, int num_children) {
     //printf("reducing! %d, %d\n", node_type, num_children);
     gn_ast_node_t **children = malloc(num_children * sizeof(gn_ast_node_t *));
 
     int i;
     for(i = num_children - 1; i >= 0; i--) {
-        gn_ast_node_t *node = gn_pop(context);
+        gn_ast_node_t *node = gn_pop();
         children[i] = node;
     }
 
@@ -69,62 +61,59 @@ static void gn_reduce(gn_parser_context_t *context,
     node->children = children;
     node->num_children = num_children;
 
-    gn_push(context, node);
+    gn_push(node);
 }
 
-static void gn_nil_node(gn_parser_context_t *context) {
-    gn_push(context, gn_create_node(GN_AST_NIL, -1));
+static void gn_nil_node() {
+    gn_push(gn_create_node(GN_AST_NIL, -1));
 }
 
-static void gn_number_node(gn_parser_context_t *context, char *text) {
+static void gn_number_node(char *text) {
     int value = atoi(text);
-    gn_push(context, gn_create_node(GN_AST_NUMBER, value));
+    gn_push(gn_create_node(GN_AST_NUMBER, value));
 }
 
-static void gn_bool_node(gn_parser_context_t *context, int value) {
-    gn_push(context, gn_create_node(GN_AST_BOOLEAN, value));
+static void gn_bool_node(int value) {
+    gn_push(gn_create_node(GN_AST_BOOLEAN, value));
 }
 
-static void gn_symbol_node(gn_parser_context_t *context, char *text) {
-    int i = context->next_symbol++;
+static void gn_symbol_node(char *text) {
+    int i = gn_context->next_symbol++;
 
     int text_len = strlen(text);
     char *symbol = malloc(text_len * sizeof(*symbol));
     strncpy(symbol, text, text_len);
 
-    context->symbols[i] = symbol;
+    gn_context->symbols[i] = symbol;
 
-    gn_push(context, gn_create_node(GN_AST_SYMBOL, i));
+    gn_push(gn_create_node(GN_AST_SYMBOL, i));
 }
 
 static int gn_read_input(char *buffer, int *result, int max_size) {
-    gn_parser_context_t *context = gn_global_context();
-
-    if(context->buffer_len == 0) {
+    if(gn_context->buffer_len == 0) {
         *result = 0;
         return 0;
     }
 
-    int num_bytes = context->buffer_len;
+    int num_bytes = gn_context->buffer_len;
     if (num_bytes > max_size) num_bytes = max_size;
 
     int i;
     for (i = 0; i < num_bytes; i++) {
-        buffer[i] = context->input_buffer[context->buffer_offset+i];
+        buffer[i] = gn_context->input_buffer[gn_context->buffer_offset+i];
     }
 
     *result = num_bytes;
-    context->buffer_offset += num_bytes;
-    context->buffer_len -= num_bytes;
+    gn_context->buffer_offset += num_bytes;
+    gn_context->buffer_len -= num_bytes;
 
     return 0;
 }
 
-static void gn_feed_input(gn_parser_context_t *context,
-                          char *new_input, int new_input_len) {
-    context->input_buffer = new_input;
-    context->buffer_len = new_input_len;
-    context->buffer_offset = 0;
+static void gn_feed_input(char *new_input, int new_input_len) {
+    gn_context->input_buffer = new_input;
+    gn_context->buffer_len = new_input_len;
+    gn_context->buffer_offset = 0;
 }
 
 #undef YY_INPUT
@@ -134,17 +123,17 @@ static void gn_feed_input(gn_parser_context_t *context,
 
 // public
 
-gn_ast_node_t *gn_parse(gn_parser_context_t *context, char *buffer, int len) {
-    gn_init_context(context);
+gn_ast_node_t *gn_parse(char *buffer, int len) {
+    gn_init_context();
 
-    gn_feed_input(context, buffer, len);
+    gn_feed_input(buffer, len);
     yyparse();
 
-    if (context->error) {
+    if (gn_context->error) {
         return NULL;
     }
 
-    gn_ast_node_t *root = gn_pop(context);
+    gn_ast_node_t *root = gn_pop();
     return root;
 }
 
@@ -152,6 +141,6 @@ gn_ast_node_t *gn_child_at(gn_ast_node_t *parent, int idx) {
     return parent->children[idx];
 }
 
-char *gn_get_symbol(gn_parser_context_t *context, gn_ast_node_t *node) {
-    return context->symbols[node->value];
+char *gn_get_symbol(gn_ast_node_t *node) {
+    return gn_context->symbols[node->value];
 }
