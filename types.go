@@ -64,7 +64,7 @@ func (v *Value) Or(other *Value) *Value {
 
 func (v *Value) And(other *Value) *Value {
   if (v.IsTruthy() && other.IsTruthy()){
-    return v
+    return other
   }
 
   return FALSE
