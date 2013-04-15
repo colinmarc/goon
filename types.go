@@ -7,11 +7,11 @@ import (
 
 type ValueType int
 const (
-  TYPE_NIL ValueType = -1
+  NilType ValueType = -1
 
   _  = iota
-  TYPE_INT
-  TYPE_BOOL
+  IntType
+  BoolType
 )
 
 type Value struct {
@@ -19,17 +19,17 @@ type Value struct {
   val_type ValueType
 }
 
-var NIL = &Value{nil, TYPE_NIL}
-var TRUE = &Value{true, TYPE_BOOL}
-var FALSE = &Value{false, TYPE_BOOL}
+var NIL = &Value{nil, NilType}
+var TRUE = &Value{true, BoolType}
+var FALSE = &Value{false, BoolType}
 
 func (v *Value) ToString() string {
   switch v.val_type {
-  case TYPE_NIL:
+  case NilType:
     return "nil"
-  case TYPE_INT:
+  case IntType:
     return strconv.Itoa(v.val.(int));
-  case TYPE_BOOL:
+  case BoolType:
     if (v.val.(bool)) {
       return "true"
     } else {
@@ -41,11 +41,11 @@ func (v *Value) ToString() string {
 }
 
 func (v *Value) IsTruthy() bool {
-  if (v.val_type == TYPE_NIL) {
+  if (v.val_type == NilType) {
     return false
   }
 
-  if (v.val_type == TYPE_BOOL && v.val.(bool) == false) {
+  if (v.val_type == BoolType && v.val.(bool) == false) {
     return false
   }
 
@@ -87,32 +87,32 @@ func (v *Value) NotEquals(other *Value) *Value {
 }
 
 func (v *Value) Add(other *Value) *Value {
-  if v.val_type == TYPE_INT && other.val_type == TYPE_INT {
-    return &Value{v.val.(int) + other.val.(int), TYPE_INT};
+  if v.val_type == IntType && other.val_type == IntType {
+    return &Value{v.val.(int) + other.val.(int), IntType};
   }
 
   return nil
 }
 
 func (v *Value) Subtract(other *Value) *Value {
-  if v.val_type == TYPE_INT && other.val_type == TYPE_INT {
-    return &Value{v.val.(int) - other.val.(int), TYPE_INT};
+  if v.val_type == IntType && other.val_type == IntType {
+    return &Value{v.val.(int) - other.val.(int), IntType};
   }
 
   return nil
 }
 
 func (v *Value) Multiply(other *Value) *Value {
-  if v.val_type == TYPE_INT && other.val_type == TYPE_INT {
-    return &Value{v.val.(int) * other.val.(int), TYPE_INT};
+  if v.val_type == IntType && other.val_type == IntType {
+    return &Value{v.val.(int) * other.val.(int), IntType};
   }
 
   return nil
 }
 
 func (v *Value) Divide(other *Value) *Value {
-  if v.val_type == TYPE_INT && other.val_type == TYPE_INT {
-    return &Value{v.val.(int) / other.val.(int), TYPE_INT};
+  if v.val_type == IntType && other.val_type == IntType {
+    return &Value{v.val.(int) / other.val.(int), IntType};
   }
 
   return nil

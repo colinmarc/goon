@@ -10,6 +10,7 @@ import (
 
 func main() {
   reader := bufio.NewReader(os.Stdin)
+  runtime := goon.New()
 
   for {
     fmt.Printf(">> ")
@@ -26,12 +27,11 @@ func main() {
     }
 
     if len(raw_line) > 1 {
-      res, err := goon.Parse(raw_line)
+      line := string(raw_line)
+      val := runtime.Interperet(line)
 
-      if err != nil {
-        fmt.Printf("err: %s\n", err)
-      } else {
-        fmt.Printf("%s\n", res.ToString())
+      if val != nil {
+        fmt.Printf("%s\n", val.ToString())
       }
     }
   }
