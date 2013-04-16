@@ -3,48 +3,79 @@ package goon
 import (
   "strconv"
   "errors"
+  "fmt"
 )
 
 var SyntaxError = errors.New("Syntax error!")
 
+func UnexpectedError(l *Lexeme, expected string) error {
+  return errors.New(fmt.Sprintf("Unexpected %s, expected %s", l, expected))
+}
+
 type Parser struct {
   lexer *Lexer
   stack []ASTNode
-  next *Lexeme
+  lexemes []*Lexeme
 }
 
-func (p *Parser) getNext() {
+func (p *Parser) expand() {
   l := <-p.lexer.stream
-  p.next = &l
+  p.lexemes = append(p.lexemes, &l)
+}
+
+func (p *Parser) shift() *Lexeme {
+  if len(p.lexemes) == 0 {
+    p.expand()
+  }
+
+  l := p.lexemes[0]
+  p.lexemes = p.lexemes[1:]
+  return l
 }
 
 func (p *Parser) accept(t LexemeType) *Lexeme {
-  if p.next.lexeme_type == t {
-    l := p.next
-    p.getNext()
+  if len(p.lexemes) == 0 {
+    p.expand()
+  }
 
-    return l
+  if p.lexemes[0].lexeme_type == t {
+    return p.shift()
   }
 
   return nil
 }
 
+func (p *Parser) peek(i int) LexemeType {
+  for {
+    if len(p.lexemes) > i {
+      return p.lexemes[i].lexeme_type
+    }
+
+    p.expand()
+  }
+
+  return ErrLexeme
+}
+
 func (p *Parser) acceptOneOf(ts ...LexemeType) *Lexeme {
+  if len(p.lexemes) == 0 {
+    p.expand()
+  }
+
   for _, t := range ts {
-    l := p.accept(t)
-    if l != nil {
-      return l
+    if p.lexemes[0].lexeme_type == t {
+      return p.shift()
     }
   }
 
   return nil
 }
 
-func (p *Parser) push(node ASTNode) {
+func (p *Parser) pushNode(node ASTNode) {
   p.stack = append(p.stack, node)
 }
 
-func (p *Parser) pop() ASTNode {
+func (p *Parser) popNode() ASTNode {
   end := len(p.stack)-1
   n := p.stack[end]
   p.stack = p.stack[:end]
@@ -52,19 +83,15 @@ func (p *Parser) pop() ASTNode {
   return n
 }
 
-func (p *Parser) empty() {
-  p.stack = p.stack[0:0]
-}
-
 func (p *Parser) pushExpression(op Operator) {
   node := &ExpressionNode{op, nil, nil}
-  node.right = p.pop()
-  node.left = p.pop()
-  p.push(node)
+  node.right = p.popNode()
+  node.left = p.popNode()
+  p.pushNode(node)
 }
 
 func (p *Parser) pushValue(v *Value) {
-  p.push(&ValueNode{v})
+  p.pushNode(&ValueNode{v})
 }
 
 /*
@@ -73,7 +100,7 @@ block = ((statement EOL) | EOL)+ EOF
 
 func block(p *Parser) error {
   for {
-    if p.next.lexeme_type == EOFLexeme {
+    if p.peek(0) == EOFLexeme {
       break
     }
 
@@ -89,15 +116,15 @@ func block(p *Parser) error {
 
     eol := p.accept(EOLLexeme)
     if eol == nil {
-       return SyntaxError
+      return UnexpectedError(p.lexemes[0], "EOL")
     }
   }
 
   node := &BlockNode{make([]ASTNode, len(p.stack))}
   _ = copy(node.children, p.stack)
 
-  p.empty()
-  p.push(node)
+  p.stack = p.stack[0:0]
+  p.pushNode(node)
 
   return nil
 }
@@ -262,7 +289,7 @@ func value(p *Parser) error {
     i, _ := strconv.Atoi(l.value)
     p.pushValue(&Value{i, IntType})
   case IdentLexeme:
-    p.push(&IdentNode{l.value})
+    p.pushNode(&IdentNode{l.value})
   case LeftParenLexeme:
     err := expression(p)
     if err != nil {
@@ -280,21 +307,19 @@ func value(p *Parser) error {
 
 func Parse(input string) (ASTNode, error) {
   lexer := Lex(input)
-
-  parser := &Parser{lexer, make([]ASTNode, 0, 1024), nil}
-  parser.getNext()
-
+  parser := &Parser{lexer, make([]ASTNode, 0, 1024), make([]*Lexeme, 0)}
 
   err := block(parser)
   if err != nil {
     return nil, err
   }
 
-  if len(parser.stack) != 1 || parser.next.lexeme_type != EOFLexeme {
+  if len(parser.stack) != 1 {
     return nil, SyntaxError
+  } else if parser.peek(0) != EOFLexeme {
+    return nil, UnexpectedError(parser.lexemes[0], "EOF")
   }
 
-  root := parser.stack[0]
-  parser.empty()
+  root := parser.popNode()
   return root, nil
 }
