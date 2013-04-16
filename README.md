@@ -1,4 +1,5 @@
 It's a baby language!
+
     if a:
       DoThing()
     elif b:
