@@ -133,9 +133,22 @@ func block(p *Parser) error {
 statement = ID ASSIGN expression
           / expression
 */
-
 func statement(p *Parser) error {
-  // TODO
+  if p.peek(0) == IdentLexeme && p.peek(1) == AssignLexeme {
+    ident, _ := p.shift(), p.shift()
+
+    err := expression(p)
+    if err != nil {
+      return err
+    }
+
+    expr := p.popNode()
+    node := &AssignNode{ident.value, expr}
+    p.pushNode(node)
+
+    return nil
+  }
+
   return expression(p)
 }
 

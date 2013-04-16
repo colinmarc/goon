@@ -132,6 +132,8 @@ func lexStart(l *Lexer) LexFn {
     } else if t, present := symbols[r]; present {
       l.expand()
       l.emit(t)
+    } else if r == '=' || r == '!' {
+      return lexCompare
     } else if unicode.IsLetter(r) || r == '_' {
       return lexWord
     } else {
@@ -159,21 +161,24 @@ func lexNumber(l *Lexer) LexFn {
 
 func lexCompare(l *Lexer) LexFn {
   var r rune
-  r = l.peek()
-  var t LexemeType
 
+  r = l.peek()
+  l.expand()
+  var t LexemeType
   if r == '=' {
     t = CompareLexeme
-  } else {
+  } else if r == '!' {
     t = InvCompareLexeme
-  }
-
-  l.expand()
-  r = l.peek()
-  if r == '=' {
-    l.emit(t)
   } else {
     l.emit(ErrLexeme)
+  }
+
+  r = l.peek()
+  if r == '=' {
+    l.expand()
+    l.emit(t)
+  } else {
+    l.emit(AssignLexeme)
   }
 
   return lexStart

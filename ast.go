@@ -115,7 +115,7 @@ func (n *ExpressionNode) Describe(indent int) {
 
 type AssignNode struct {
   ident string
-  expr *ExpressionNode
+  expr ASTNode
 }
 
 func (n *AssignNode) Evaluate(runtime *Runtime) *Value {
