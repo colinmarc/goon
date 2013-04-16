@@ -108,7 +108,7 @@ func block(p *Parser) error {
     indent := p.accept(IndentLexeme)
     spaces := len(indent.value)
     if (spaces % 2 != 0) || ((spaces / 2) > p.indentation) {
-      return errors.new("Unexpected indent (%d)", spaces)
+      return errors.New(fmt.Sprintf("Unexpected indent (%d)", spaces))
     } else if (spaces / 2) < p.indentation {
       break
     }

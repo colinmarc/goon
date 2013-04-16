@@ -4,11 +4,20 @@ import (
   "fmt"
   "os"
   "io"
+  "io/ioutil"
   "bufio"
   "goon"
 )
 
 func main() {
+  if len(os.Args) > 1 {
+    file(os.Args[1])
+  } else {
+    repl()
+  }
+}
+
+func repl() {
   reader := bufio.NewReader(os.Stdin)
   runtime := goon.New()
 
@@ -27,12 +36,22 @@ func main() {
     }
 
     if len(raw_line) > 1 {
-      line := string(raw_line)
-      val := runtime.Interperet(line)
+      val := runtime.Interperet(string(raw_line))
 
       if val != nil {
         fmt.Printf("%s\n", val)
       }
     }
   }
+}
+
+func file(filename string) {
+  input, err := ioutil.ReadFile(filename)
+  if err != nil {
+    fmt.Printf("error reading file: %s\n", err)
+    return
+  }
+
+  runtime := goon.New()
+  runtime.Interperet(string(input))
 }
