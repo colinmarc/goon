@@ -137,8 +137,6 @@ func expression(p *Parser) error {
       p.pushExpression(AndOp)
     } else if l.lexeme_type == OrLexeme {
       p.pushExpression(OrOp)
-    } else {
-      return SyntaxError
     }
   }
 
@@ -170,7 +168,7 @@ func equality(p *Parser) error {
     } else if l.lexeme_type == InvCompareLexeme {
       p.pushExpression(InvCompareOp)
     } else {
-      return SyntaxError
+      return UnexpectedError(p.lexemes[0], "EOL")
     }
   }
 
@@ -201,8 +199,6 @@ func sum(p *Parser) error {
       p.pushExpression(AddOp)
     } else if l.lexeme_type == SubtractLexeme {
       p.pushExpression(SubtractOp)
-    } else {
-      return SyntaxError
     }
   }
 
@@ -233,8 +229,6 @@ func product(p *Parser) error {
       p.pushExpression(MultiplyOp)
     } else if l.lexeme_type == DivideLexeme {
       p.pushExpression(DivideOp)
-    } else {
-      return SyntaxError
     }
   }
 
@@ -254,7 +248,7 @@ func value(p *Parser) error {
                      IdentLexeme, LeftParenLexeme)
 
   if l == nil {
-    return SyntaxError
+    return UnexpectedError(p.lexemes[0], "value")
   }
 
   switch l.lexeme_type {
@@ -277,7 +271,7 @@ func value(p *Parser) error {
 
     close_paren := p.accept(RightParenLexeme)
     if close_paren == nil {
-      return SyntaxError
+      return UnexpectedError(p.lexemes[0], "')'")
     }
   }
 

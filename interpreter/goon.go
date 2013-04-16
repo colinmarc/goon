@@ -31,7 +31,7 @@ func main() {
       val := runtime.Interperet(line)
 
       if val != nil {
-        fmt.Printf("%s\n", val.ToString())
+        fmt.Printf("%s\n", val)
       }
     }
   }

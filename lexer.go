@@ -3,6 +3,7 @@ package goon
 import (
   "strings"
   "unicode"
+  "fmt"
 )
 
 const (
@@ -63,8 +64,14 @@ type Lexeme struct {
   value string
 }
 
-func (l *Lexeme) string() string {
-  return l.value
+func (l *Lexeme) String() string {
+  if l.lexeme_type == EOFLexeme {
+    return "EOF"
+  } else if l.lexeme_type == EOLLexeme {
+    return "EOL"
+  }
+
+  return fmt.Sprintf("`%s`", l.value)
 }
 
 type Lexer struct {

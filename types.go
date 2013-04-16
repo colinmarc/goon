@@ -23,7 +23,7 @@ var NIL = &Value{nil, NilType}
 var TRUE = &Value{true, BoolType}
 var FALSE = &Value{false, BoolType}
 
-func (v *Value) ToString() string {
+func (v *Value) String() string {
   switch v.val_type {
   case NilType:
     return "nil"

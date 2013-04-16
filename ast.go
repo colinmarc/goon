@@ -21,7 +21,7 @@ func (n *ValueNode) Evaluate(runtime *Runtime) *Value {
 }
 
 func (n *ValueNode) Describe(indent int) {
-  fmt.Printf("*%sVALUE: %s\n", strings.Repeat("  ", indent), n.value.ToString())
+  fmt.Printf("*%sVALUE: %s\n", strings.Repeat("  ", indent), n.value)
 }
 
 // IDENT
