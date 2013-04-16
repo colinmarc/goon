@@ -37,8 +37,14 @@ const (
   OperatorLexeme
   LeftParenLexeme
   RightParenLexeme
+  IfLexeme
+  UnlessLexeme
+  ElifLexeme
+  ElseLexeme
+  ThenLexeme
   SpaceLexeme
   EOLLexeme
+  IndentLexeme
   EOFLexeme
 )
 
@@ -49,14 +55,19 @@ var symbols = map[rune]LexemeType{
   '/': DivideLexeme,
   '(': LeftParenLexeme,
   ')': RightParenLexeme,
+  ':': ThenLexeme,
 }
 
 var keywords = map[string]LexemeType{
-  "nil":   NilLexeme,
-  "true":  TrueLexeme,
-  "false": FalseLexeme,
-  "and":   AndLexeme,
-  "or":    OrLexeme,
+  "nil":    NilLexeme,
+  "true":   TrueLexeme,
+  "false":  FalseLexeme,
+  "and":    AndLexeme,
+  "or":     OrLexeme,
+  "if":     IfLexeme,
+  "unless": UnlessLexeme,
+  "elif":   ElifLexeme,
+  "else":   ElseLexeme,
 }
 
 type Lexeme struct {
@@ -69,9 +80,11 @@ func (l *Lexeme) String() string {
     return "EOF"
   } else if l.lexeme_type == EOLLexeme {
     return "EOL"
+  } else if l.lexeme_type == IndentLexeme {
+    return fmt.Sprintf("INDENT(%d)", len(l.value))
   }
 
-  return fmt.Sprintf("`%s`", l.value)
+  return fmt.Sprintf("`%s` (%d)", l.value, l.lexeme_type)
 }
 
 type Lexer struct {
@@ -114,6 +127,10 @@ func (l *Lexer) emit(lexeme_type LexemeType) {
 }
 
 func lexStart(l *Lexer) LexFn {
+  return lexIndent
+}
+
+func lexCode(l *Lexer) LexFn {
   // TODO: be smarter about whitespace
 
   for {
@@ -125,6 +142,7 @@ func lexStart(l *Lexer) LexFn {
     } else if r == '\n' {
       l.expand()
       l.emit(EOLLexeme)
+      return lexIndent
     } else if r == ' ' {
       l.skip()
     } else if in(r, digits) {
@@ -145,6 +163,20 @@ func lexStart(l *Lexer) LexFn {
   return lexStart
 }
 
+func lexIndent(l *Lexer) LexFn {
+  for {
+    if l.peek() != ' ' {
+      break
+    }
+
+    l.expand()
+  }
+
+  l.emit(IndentLexeme)
+
+  return lexCode
+}
+
 func lexNumber(l *Lexer) LexFn {
   for {
     r := l.peek()
@@ -156,7 +188,7 @@ func lexNumber(l *Lexer) LexFn {
     }
   }
 
-  return lexStart
+  return lexCode
 }
 
 func lexCompare(l *Lexer) LexFn {
@@ -181,7 +213,7 @@ func lexCompare(l *Lexer) LexFn {
     l.emit(AssignLexeme)
   }
 
-  return lexStart
+  return lexCode
 }
 
 func lexWord(l *Lexer) LexFn {
@@ -205,7 +237,7 @@ func lexWord(l *Lexer) LexFn {
     }
   }
 
-  return lexStart
+  return lexCode
 }
 
 func (l *Lexer) Run() {

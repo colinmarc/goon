@@ -16,10 +16,12 @@ type Parser struct {
   lexer *Lexer
   stack []ASTNode
   lexemes []*Lexeme
+  indentation int
 }
 
 func (p *Parser) expand() {
   l := <-p.lexer.stream
+  //fmt.Printf("got lexeme: %s\n", l.String())
   p.lexemes = append(p.lexemes, &l)
 }
 
@@ -83,10 +85,14 @@ func (p *Parser) popNode() ASTNode {
   return n
 }
 
+func (p *Parser) popTwoNodes() (ASTNode, ASTNode) {
+  second, first := p.popNode(), p.popNode()
+  return first, second
+}
+
 func (p *Parser) pushExpression(op Operator) {
-  node := &ExpressionNode{op, nil, nil}
-  node.right = p.popNode()
-  node.left = p.popNode()
+  left, right := p.popTwoNodes()
+  node := &ExpressionNode{op, left, right}
   p.pushNode(node)
 }
 
@@ -95,11 +101,18 @@ func (p *Parser) pushValue(v *Value) {
 }
 
 /*
-block = ((statement EOL) | EOL)+ EOF
+block = ((control EOL) | EOL)+ EOF
 */
-
 func block(p *Parser) error {
   for {
+    indent := p.accept(IndentLexeme)
+    spaces := len(indent.value)
+    if (spaces % 2 != 0) || ((spaces / 2) > p.indentation) {
+      return errors.new("Unexpected indent (%d)", spaces)
+    } else if (spaces / 2) < p.indentation {
+      break
+    }
+
     if p.peek(0) == EOFLexeme {
       break
     }
@@ -109,7 +122,7 @@ func block(p *Parser) error {
        continue
     }
 
-    err := statement(p)
+    err := control(p)
     if err != nil {
       return err
     }
@@ -125,6 +138,133 @@ func block(p *Parser) error {
 
   p.stack = p.stack[0:0]
   p.pushNode(node)
+
+  return nil
+}
+
+/*
+control = (IF | UNLESS) expression THEN block
+            (ELIF expression THEN block)*
+            (ELSE expression THEN block)?
+        / statement (IF | UNLESS) expr
+        / statement
+*/
+func control(p *Parser) error {
+  // TODO: unless won't work
+  var l *Lexeme
+  var err error
+
+  branch := p.acceptOneOf(IfLexeme, UnlessLexeme)
+  if branch != nil {
+    branch_node := &BranchNode{make([]CondNode, 0), nil}
+
+    err = expression(p)
+    if err != nil {
+      return err
+    }
+
+    l = p.accept(ThenLexeme)
+    if l == nil {
+      return UnexpectedError(p.lexemes[0], "':'")
+    }
+
+    l = p.accept(EOLLexeme)
+    if l == nil {
+      return UnexpectedError(p.lexemes[0], "EOL")
+    }
+
+    p.indentation++
+
+    err = block(p)
+    if err != nil {
+      return err
+    }
+
+    p.indentation--
+
+    branch_node.AddCond(p.popTwoNodes())
+
+    for {
+      elif_branch := p.accept(ElifLexeme)
+      if elif_branch == nil {
+        break
+      }
+
+      err = expression(p)
+      if err != nil {
+        return err
+      }
+
+      l = p.accept(ThenLexeme)
+      if l == nil {
+        return UnexpectedError(p.lexemes[0], "':'")
+      }
+
+      l = p.accept(EOLLexeme)
+      if l == nil {
+        return UnexpectedError(p.lexemes[0], "EOL")
+      }
+
+      p.indentation++
+
+      err = block(p)
+      if err != nil {
+        return err
+      }
+
+      p.indentation--
+
+      branch_node.AddCond(p.popTwoNodes())
+    }
+
+    else_branch := p.accept(ElseLexeme)
+    if else_branch != nil {
+      err = expression(p)
+      if err != nil {
+        return err
+      }
+
+      l = p.accept(ThenLexeme)
+      if l == nil {
+        return UnexpectedError(p.lexemes[0], "':'")
+      }
+
+      l = p.accept(EOLLexeme)
+      if l == nil {
+        return UnexpectedError(p.lexemes[0], "EOL")
+      }
+
+      p.indentation++
+
+      err = block(p)
+      if err != nil {
+        return err
+      }
+
+      p.indentation--
+
+      branch_node.default_branch = p.popNode()
+    }
+
+    return nil
+  }
+
+  err = statement(p)
+  if(err != nil) {
+    return err
+  }
+
+  cond := p.acceptOneOf(IfLexeme, UnlessLexeme)
+  if cond != nil {
+    err = expression(p)
+    if err != nil {
+      return err
+    }
+
+    branch_node := &BranchNode{make([]CondNode, 0), nil}
+    branch_node.AddCond(p.popNode(), p.popNode())
+    p.pushNode(branch_node)
+  }
 
   return nil
 }
@@ -320,7 +460,7 @@ func value(p *Parser) error {
 
 func Parse(input string) (ASTNode, error) {
   lexer := Lex(input)
-  parser := &Parser{lexer, make([]ASTNode, 0, 1024), make([]*Lexeme, 0)}
+  parser := &Parser{lexer, make([]ASTNode, 0, 1024), make([]*Lexeme, 0), 0}
 
   err := block(parser)
   if err != nil {

@@ -152,3 +152,55 @@ func (n *BlockNode) Describe(indent int) {
   }
 }
 
+// BRANCH
+
+type CondNode struct {
+  cond ASTNode
+  then ASTNode
+}
+
+type BranchNode struct {
+  branches []CondNode
+  default_branch ASTNode
+}
+
+func (n *BranchNode) AddCond(cond ASTNode, then ASTNode) {
+  n.branches = append(n.branches, CondNode{cond, then})
+}
+
+func (n *BranchNode) Evaluate(runtime *Runtime) *Value {
+  for _, branch := range n.branches {
+    v := branch.cond.Evaluate(runtime)
+    if v.IsTruthy() {
+      return branch.then.Evaluate(runtime)
+    }
+  }
+
+  if n.default_branch != nil {
+    return n.default_branch.Evaluate(runtime)
+  }
+
+  return NIL
+}
+
+func (n *BranchNode) Describe(indent int) {
+  first := true
+
+  for _, branch := range n.branches {
+    if first {
+      fmt.Printf("# %sIF:\n", strings.Repeat("  ", indent))
+      first = false
+    } else {
+      fmt.Printf("# %sELSE IF:\n", strings.Repeat("  ", indent))
+    }
+
+    branch.cond.Describe(indent+1)
+    fmt.Printf("# %sTHEN:\n", strings.Repeat("  ", indent))
+  }
+
+  if n.default_branch != nil {
+    fmt.Printf("# %sELSE THEN:\n", strings.Repeat("  ", indent))
+    n.default_branch.Describe(indent+1)
+  }
+}
+
