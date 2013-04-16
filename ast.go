@@ -21,7 +21,7 @@ func (n *ValueNode) Evaluate(runtime *Runtime) *Value {
 }
 
 func (n *ValueNode) Describe(indent int) {
-  fmt.Printf("*%sVALUE: %s\n", strings.Repeat("  ", indent), n.value)
+  fmt.Printf("# %sVALUE: %s\n", strings.Repeat("  ", indent), n.value)
 }
 
 // IDENT
@@ -35,7 +35,7 @@ func (n *IdentNode) Evaluate(runtime *Runtime) *Value {
 }
 
 func (n *IdentNode) Describe(indent int) {
-  fmt.Printf("*%sIDENT: `%s`\n", strings.Repeat("  ", indent), n.ident)
+  fmt.Printf("# %sIDENT: `%s`\n", strings.Repeat("  ", indent), n.ident)
 }
 
 // EXPRESSION
@@ -106,7 +106,7 @@ func (n *ExpressionNode) Describe(indent int) {
     ex = "DIVIDE"
   }
 
-  fmt.Printf("*%s%s:\n", strings.Repeat("  ", indent), ex)
+  fmt.Printf("# %s%s:\n", strings.Repeat("  ", indent), ex)
   n.left.Describe(indent + 1)
   n.right.Describe(indent + 1)
 }
@@ -126,7 +126,7 @@ func (n *AssignNode) Evaluate(runtime *Runtime) *Value {
 }
 
 func (n *AssignNode) Describe(indent int) {
-  fmt.Printf("*%sASSIGN `%s` to:\n", strings.Repeat("  ", indent), n.ident)
+  fmt.Printf("# %sASSIGN `%s` to:\n", strings.Repeat("  ", indent), n.ident)
   n.expr.Describe(indent+1)
 }
 
@@ -146,7 +146,7 @@ func (n *BlockNode) Evaluate(runtime *Runtime) *Value {
 }
 
 func (n *BlockNode) Describe(indent int) {
-  fmt.Printf("*%sBLOCK (%d):\n", strings.Repeat("  ", indent), len(n.children))
+  fmt.Printf("# %sBLOCK (%d):\n", strings.Repeat("  ", indent), len(n.children))
   for _, child := range n.children {
     child.Describe(indent+1)
   }
