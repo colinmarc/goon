@@ -3,9 +3,9 @@ It's a baby language!
     if a:
       DoThing()
     elif b:
-
+      DoOtherThing
     else:
-      DoOtherThing()
+      DoThirdThing()
 
     DoFinalThing() if b
 
