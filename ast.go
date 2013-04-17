@@ -206,3 +206,20 @@ func (n *BranchNode) Describe(indent int) {
   }
 }
 
+// PRINT
+// TODO: kinda janks
+
+type PrintNode struct {
+  expr ASTNode
+}
+
+func (n *PrintNode) Evaluate(runtime *Runtime) *Value {
+  fmt.Printf("%s\n", n.expr.Evaluate(runtime))
+  return NIL
+}
+
+func (n *PrintNode) Describe(indent int) {
+  fmt.Printf("# %sPRINT:\n", strings.Repeat("  ", indent))
+  n.expr.Describe(indent+1)
+}
+

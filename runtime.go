@@ -20,6 +20,6 @@ func (r *Runtime) Interperet(input string) *Value {
     return nil
   }
 
-  root.Describe(0)
+  //root.Describe(0)
   return root.Evaluate(r)
 }

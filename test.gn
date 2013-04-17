@@ -1,0 +1,6 @@
+
+a = 10
+if a == 5:
+  print 3 * a
+else:
+  print 2 * a

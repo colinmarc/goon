@@ -271,6 +271,7 @@ func control(p *Parser) error {
 
 /*
 statement = ID ASSIGN expression
+          / PRINT expression
           / expression
 */
 func statement(p *Parser) error {
@@ -286,6 +287,17 @@ func statement(p *Parser) error {
     node := &AssignNode{ident.value, expr}
     p.pushNode(node)
 
+    return nil
+  }
+
+  pr := p.accept(PrintLexeme)
+  if pr != nil {
+    err := expression(p)
+    if err != nil {
+      return err
+    }
+
+    p.pushNode(&PrintNode{p.popNode()})
     return nil
   }
 

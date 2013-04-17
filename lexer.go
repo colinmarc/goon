@@ -43,6 +43,7 @@ const (
   ElifLexeme
   ElseLexeme
   ThenLexeme
+  PrintLexeme
   SpaceLexeme
   EOLLexeme
   IndentLexeme
@@ -69,6 +70,7 @@ var keywords = map[string]LexemeType{
   "unless": UnlessLexeme,
   "elif":   ElifLexeme,
   "else":   ElseLexeme,
+  "print":  PrintLexeme,
 }
 
 type Lexeme struct {
@@ -83,6 +85,8 @@ func (l *Lexeme) String() string {
     return "EOL"
   } else if l.lexeme_type == IndentLexeme {
     return fmt.Sprintf("INDENT(%d)", len(l.value))
+  } else if l.lexeme_type == PrintLexeme {
+    return "PRINT"
   }
 
   return fmt.Sprintf("`%s` (%d)", l.value, l.lexeme_type)
