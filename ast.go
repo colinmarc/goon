@@ -93,7 +93,7 @@ func (n *ExpressionNode) Describe(indent int) {
   case OrOp:
     ex = "OR"
   case CompareOp:
-    ex = "LEFT"
+    ex = "EQUALS"
   case InvCompareOp:
     ex = "NOT_EQUALS"
   case AddOp:
@@ -195,7 +195,9 @@ func (n *BranchNode) Describe(indent int) {
     }
 
     branch.cond.Describe(indent+1)
+
     fmt.Printf("# %sTHEN:\n", strings.Repeat("  ", indent))
+    branch.then.Describe(indent+1)
   }
 
   if n.default_branch != nil {

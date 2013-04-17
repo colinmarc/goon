@@ -21,6 +21,10 @@ type Parser struct {
 
 func (p *Parser) expand() {
   l := <-p.lexer.stream
+  if l.lexeme_type == 0 {
+    l = Lexeme{EOFLexeme, ""}
+  }
+
   //fmt.Printf("got lexeme: %s\n", l.String())
   p.lexemes = append(p.lexemes, &l)
 }
@@ -36,11 +40,7 @@ func (p *Parser) shift() *Lexeme {
 }
 
 func (p *Parser) accept(t LexemeType) *Lexeme {
-  if len(p.lexemes) == 0 {
-    p.expand()
-  }
-
-  if p.lexemes[0].lexeme_type == t {
+  if p.peek(0) == t {
     return p.shift()
   }
 
@@ -104,6 +104,8 @@ func (p *Parser) pushValue(v *Value) {
 block = ((control EOL) | EOL)+ EOF
 */
 func block(p *Parser) error {
+  mark := len(p.stack)
+
   for {
     indent := p.accept(IndentLexeme)
     spaces := len(indent.value)
@@ -127,16 +129,18 @@ func block(p *Parser) error {
       return err
     }
 
-    eol := p.accept(EOLLexeme)
+    eol := p.acceptOneOf(EOLLexeme, EOFLexeme)
     if eol == nil {
-      return UnexpectedError(p.lexemes[0], "EOL")
+      return UnexpectedError(p.lexemes[0], "EOL/EOF")
+    } else if eol.lexeme_type == EOFLexeme {
+      break
     }
   }
 
-  node := &BlockNode{make([]ASTNode, len(p.stack))}
-  _ = copy(node.children, p.stack)
+  node := &BlockNode{make([]ASTNode, len(p.stack) - mark)}
+  _ = copy(node.children, p.stack[mark:])
 
-  p.stack = p.stack[0:0]
+  p.stack = p.stack[0:mark]
   p.pushNode(node)
 
   return nil
@@ -219,11 +223,6 @@ func control(p *Parser) error {
 
     else_branch := p.accept(ElseLexeme)
     if else_branch != nil {
-      err = expression(p)
-      if err != nil {
-        return err
-      }
-
       l = p.accept(ThenLexeme)
       if l == nil {
         return UnexpectedError(p.lexemes[0], "':'")
@@ -246,6 +245,7 @@ func control(p *Parser) error {
       branch_node.default_branch = p.popNode()
     }
 
+    p.pushNode(branch_node)
     return nil
   }
 
@@ -347,8 +347,6 @@ func equality(p *Parser) error {
       p.pushExpression(CompareOp)
     } else if l.lexeme_type == InvCompareLexeme {
       p.pushExpression(InvCompareOp)
-    } else {
-      return UnexpectedError(p.lexemes[0], "EOL")
     }
   }
 

@@ -20,6 +20,7 @@ type LexFn func(*Lexer) LexFn
 
 const (
   ErrLexeme LexemeType = iota
+  _
   NilLexeme
   TrueLexeme
   FalseLexeme
