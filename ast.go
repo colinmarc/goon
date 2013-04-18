@@ -111,6 +111,43 @@ func (n *ExpressionNode) Describe(indent int) {
   n.right.Describe(indent + 1)
 }
 
+// KEYWORD
+
+type Keyword string
+const (
+  ReturnKeyword Keyword = "return"
+  PrintKeyword Keyword  = "print"
+)
+
+type KeywordNode struct {
+  keyword Keyword
+  expr ASTNode
+}
+
+func (n *KeywordNode) Evaluate(runtime *Runtime) *Value {
+  switch n.keyword {
+  //case ReturnKeyword:
+    // TODO
+  case PrintKeyword:
+    fmt.Printf("%s\n", n.expr.Evaluate(runtime))
+  }
+
+  return NIL
+}
+
+func (n *KeywordNode) Describe(indent int) {
+  var kw string;
+  switch n.keyword {
+  case ReturnKeyword:
+    kw = "RETURN"
+  case PrintKeyword:
+    kw = "PRINT"
+  }
+
+  fmt.Printf("# %s%s:\n", strings.Repeat("  ", indent), kw)
+  n.expr.Describe(indent + 1)
+}
+
 // ASSIGN
 
 type AssignNode struct {
@@ -128,6 +165,36 @@ func (n *AssignNode) Evaluate(runtime *Runtime) *Value {
 func (n *AssignNode) Describe(indent int) {
   fmt.Printf("# %sASSIGN `%s` to:\n", strings.Repeat("  ", indent), n.ident)
   n.expr.Describe(indent+1)
+}
+
+// DEF
+
+type DefNode struct {
+  ident string
+  arguments []string
+  block *BlockNode
+}
+
+func (n *DefNode) AddArgument(arg string) {
+  n.arguments = append(n.arguments, arg)
+}
+
+func (n *DefNode) Evaluate(runtime *Runtime) *Value {
+  // TODO
+  return nil
+}
+
+func (n *DefNode) Describe(indent int) {
+  fmt.Printf(
+    "# %sDEFINE `%s` (%s):\n",
+    strings.Repeat("  ", indent),
+    n.ident,
+    strings.Join(n.arguments, ", "),
+  )
+
+  for _, child := range n.block.children {
+    child.Describe(indent+1)
+  }
 }
 
 // BLOCK
@@ -205,21 +272,3 @@ func (n *BranchNode) Describe(indent int) {
     n.default_branch.Describe(indent+1)
   }
 }
-
-// PRINT
-// TODO: kinda janks
-
-type PrintNode struct {
-  expr ASTNode
-}
-
-func (n *PrintNode) Evaluate(runtime *Runtime) *Value {
-  fmt.Printf("%s\n", n.expr.Evaluate(runtime))
-  return NIL
-}
-
-func (n *PrintNode) Describe(indent int) {
-  fmt.Printf("# %sPRINT:\n", strings.Repeat("  ", indent))
-  n.expr.Describe(indent+1)
-}
-

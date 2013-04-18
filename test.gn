@@ -1,6 +1,6 @@
 
-a = 10
-if a == 5:
-  print 3 * a
-else:
-  print 2 * a
+Add (a, b) ->
+  return a + b
+
+a = 1
+b = 1

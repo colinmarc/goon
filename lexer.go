@@ -8,6 +8,7 @@ import (
 
 const (
   digits string = "0123456789"
+  symbols string = "+-*/=(),:"
   eof rune = -1
 )
 
@@ -25,10 +26,15 @@ const (
   TrueLexeme
   FalseLexeme
   NumberLexeme
+
   IdentLexeme
+  MethodIdentLexeme
+
   AssignLexeme
+
   AndLexeme
   OrLexeme
+
   AddLexeme
   SubtractLexeme
   MultiplyLexeme
@@ -36,31 +42,41 @@ const (
   CompareLexeme
   InvCompareLexeme
   OperatorLexeme
+
   LeftParenLexeme
   RightParenLexeme
+
   IfLexeme
   UnlessLexeme
   ElifLexeme
   ElseLexeme
+
   ThenLexeme
+  CommaLexeme
+  DefLexeme
+
+  ReturnLexeme
   PrintLexeme
+
   SpaceLexeme
-  EOLLexeme
   IndentLexeme
+  EOLLexeme
   EOFLexeme
 )
 
-var symbols = map[rune]LexemeType{
+var symbol_map = map[rune]LexemeType{
+  '=': AssignLexeme,
   '+': AddLexeme,
   '-': SubtractLexeme,
   '*': MultiplyLexeme,
   '/': DivideLexeme,
   '(': LeftParenLexeme,
   ')': RightParenLexeme,
+  ',': CommaLexeme,
   ':': ThenLexeme,
 }
 
-var keywords = map[string]LexemeType{
+var keyword_map = map[string]LexemeType{
   "nil":    NilLexeme,
   "true":   TrueLexeme,
   "false":  FalseLexeme,
@@ -71,6 +87,7 @@ var keywords = map[string]LexemeType{
   "elif":   ElifLexeme,
   "else":   ElseLexeme,
   "print":  PrintLexeme,
+  "return": ReturnLexeme,
 }
 
 type Lexeme struct {
@@ -152,11 +169,8 @@ func lexCode(l *Lexer) LexFn {
       l.skip()
     } else if in(r, digits) {
       return lexNumber
-    } else if t, present := symbols[r]; present {
-      l.expand()
-      l.emit(t)
-    } else if r == '=' || r == '!' {
-      return lexCompare
+    } else if in(r, symbols) {
+      return lexSymbol
     } else if unicode.IsLetter(r) || r == '_' {
       return lexWord
     } else {
@@ -196,26 +210,22 @@ func lexNumber(l *Lexer) LexFn {
   return lexCode
 }
 
-func lexCompare(l *Lexer) LexFn {
-  var r rune
-
-  r = l.peek()
+func lexSymbol(l *Lexer) LexFn {
+  current := l.peek()
   l.expand()
-  var t LexemeType
-  if r == '=' {
-    t = CompareLexeme
-  } else if r == '!' {
-    t = InvCompareLexeme
-  } else {
-    l.emit(ErrLexeme)
-  }
+  next := l.peek()
 
-  r = l.peek()
-  if r == '=' {
+  if current == '=' && next == '=' {
     l.expand()
+    l.emit(CompareLexeme)
+  } else if current == '!'&& next == '=' {
+    l.expand()
+    l.emit(InvCompareLexeme)
+  } else if current == '-' && next == '>' {
+    l.expand()
+    l.emit(DefLexeme)
+  } else if t, present := symbol_map[current]; present {
     l.emit(t)
-  } else {
-    l.emit(AssignLexeme)
   }
 
   return lexCode
@@ -231,11 +241,15 @@ func lexWord(l *Lexer) LexFn {
       first = false
       l.expand()
     } else {
-      current := string(l.current())
-      if t, present := keywords[current]; present {
+      current := l.current()
+      if t, present := keyword_map[string(current)]; present {
         l.emit(t)
       } else {
-        l.emit(IdentLexeme)
+        if unicode.IsUpper(current[0]) {
+          l.emit(MethodIdentLexeme)
+        } else {
+          l.emit(IdentLexeme)
+        }
       }
 
       break

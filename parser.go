@@ -150,8 +150,7 @@ func block(p *Parser) error {
 control = (IF | UNLESS) expression THEN block
             (ELIF expression THEN block)*
             (ELSE expression THEN block)?
-        / statement (IF | UNLESS) expr
-        / statement
+        / definition
 */
 func control(p *Parser) error {
   // TODO: unless won't work
@@ -249,14 +248,88 @@ func control(p *Parser) error {
     return nil
   }
 
-  err = statement(p)
-  if(err != nil) {
+  return definition(p)
+}
+
+/*
+definition = METHOD_ID (LEFT_P ID (COMMA ID)+ RIGHT_P)? DEF block
+           / inline_conditional
+*/
+func definition(p *Parser) error {
+  var l *Lexeme
+
+  method_id := p.accept(MethodIdentLexeme)
+  if method_id != nil {
+    node := &DefNode{method_id.value, make([]string, 0), nil}
+
+    l = p.accept(LeftParenLexeme)
+    if l != nil {
+      var ident *Lexeme
+
+      ident = p.accept(IdentLexeme)
+      if ident == nil {
+        return UnexpectedError(p.lexemes[0], "ID")
+      }
+      node.AddArgument(ident.value)
+
+      for {
+        l = p.acceptOneOf(CommaLexeme, RightParenLexeme)
+        if l == nil {
+          return UnexpectedError(p.lexemes[0], "')' or ','")
+        }
+
+        if l.lexeme_type == RightParenLexeme {
+          break
+        }
+
+        ident = p.accept(IdentLexeme)
+        if ident == nil {
+          return UnexpectedError(p.lexemes[0], "ID")
+        }
+        node.AddArgument(ident.value)
+      }
+    }
+
+    def := p.accept(DefLexeme)
+    if def == nil {
+      return UnexpectedError(p.lexemes[0], "'->'")
+    }
+
+    eol := p.accept(EOLLexeme)
+    if eol == nil {
+      return UnexpectedError(p.lexemes[0], "EOL")
+    }
+
+    p.indentation++
+
+    err := block(p)
+    if err != nil {
+      return err
+    }
+
+    p.indentation--
+
+    node.block = p.popNode().(*BlockNode)
+    p.pushNode(node)
+
+    return nil
+  }
+
+  return inline_conditional(p)
+}
+
+/*
+inline_conditional = statement ((IF | UNLESS) expr)?
+*/
+func inline_conditional(p *Parser) error {
+  err := statement(p)
+  if err != nil {
     return err
   }
 
   cond := p.acceptOneOf(IfLexeme, UnlessLexeme)
   if cond != nil {
-    err = expression(p)
+    err := expression(p)
     if err != nil {
       return err
     }
@@ -271,7 +344,7 @@ func control(p *Parser) error {
 
 /*
 statement = ID ASSIGN expression
-          / PRINT expression
+          / KEYWORD expression
           / expression
 */
 func statement(p *Parser) error {
@@ -290,14 +363,23 @@ func statement(p *Parser) error {
     return nil
   }
 
-  pr := p.accept(PrintLexeme)
-  if pr != nil {
+  kw := p.acceptOneOf(ReturnLexeme, PrintLexeme)
+  if kw != nil {
     err := expression(p)
     if err != nil {
       return err
     }
 
-    p.pushNode(&PrintNode{p.popNode()})
+    n := p.popNode()
+    var k Keyword
+    switch kw.lexeme_type {
+    case ReturnLexeme:
+      k = ReturnKeyword
+    case PrintLexeme:
+      k = PrintKeyword
+    }
+
+    p.pushNode(&KeywordNode{k, n})
     return nil
   }
 
@@ -431,7 +513,7 @@ value = NIL
       / FALSE
       / NUMBER
       / ID
-      / OPEN expression CLOSE
+      / LEFT_P expression RIGHT_P
 */
 func value(p *Parser) error {
   l := p.acceptOneOf(NilLexeme, TrueLexeme, FalseLexeme, NumberLexeme,
