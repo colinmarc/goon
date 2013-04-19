@@ -508,33 +508,21 @@ func product(p *Parser) error {
 }
 
 /*
-value = NIL
+value = LEFT_P expression RIGHT_P
+      / NIL
       / TRUE
       / FALSE
       / NUMBER
-      / ID
-      / LEFT_P expression RIGHT_P
+      / id
 */
 func value(p *Parser) error {
-  l := p.acceptOneOf(NilLexeme, TrueLexeme, FalseLexeme, NumberLexeme,
-                     IdentLexeme, LeftParenLexeme)
+  l := p.acceptOneOf(NilLexeme, TrueLexeme, FalseLexeme, NumberLexeme, LeftParenLexeme)
 
   if l == nil {
-    return UnexpectedError(p.lexemes[0], "value")
+    return id(p)
   }
 
   switch l.lexeme_type {
-  case NilLexeme:
-    p.pushValue(NIL)
-  case TrueLexeme:
-    p.pushValue(TRUE)
-  case FalseLexeme:
-    p.pushValue(FALSE)
-  case NumberLexeme:
-    i, _ := strconv.Atoi(l.value)
-    p.pushValue(&Value{i, IntType})
-  case IdentLexeme:
-    p.pushNode(&IdentNode{l.value})
   case LeftParenLexeme:
     err := expression(p)
     if err != nil {
@@ -545,6 +533,64 @@ func value(p *Parser) error {
     if close_paren == nil {
       return UnexpectedError(p.lexemes[0], "')'")
     }
+  case NilLexeme:
+    p.pushValue(NIL)
+  case TrueLexeme:
+    p.pushValue(TRUE)
+  case FalseLexeme:
+    p.pushValue(FALSE)
+  case NumberLexeme:
+    i, _ := strconv.Atoi(l.value)
+    p.pushValue(&Value{i, IntType})
+  case IdentLexeme:
+
+  }
+
+  return nil
+}
+
+/*
+id = ID (LEFT_P (expression (COMMA expression)+)? RIGHT_P)?
+*/
+func id(p *Parser) error {
+  ident := p.accept(IdentLexeme)
+  if ident == nil {
+    return UnexpectedError(p.lexemes[0], "ID")
+  }
+
+  var l *Lexeme
+
+  l = p.accept(LeftParenLexeme)
+  if l != nil {
+
+    node := &CallNode{ident.value, make([]ASTNode, 0)}
+    first := true
+    for {
+      l = p.accept(RightParenLexeme)
+      if l != nil {
+        break
+      }
+
+      if first {
+        first = false
+      } else {
+        l = p.accept(CommaLexeme)
+        if l == nil && !first {
+          return UnexpectedError(p.lexemes[0], "')' or ','")
+        }
+      }
+
+      err := expression(p)
+      if err != nil {
+        return err
+      }
+
+      node.AddArgument(p.popNode())
+    }
+
+    p.pushNode(node)
+  } else {
+    p.pushNode(&IdentNode{ident.value})
   }
 
   return nil

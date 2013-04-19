@@ -38,6 +38,29 @@ func (n *IdentNode) Describe(indent int) {
   fmt.Printf("# %sIDENT: `%s`\n", strings.Repeat("  ", indent), n.ident)
 }
 
+// CALL
+
+type CallNode struct {
+  ident string
+  arguments []ASTNode
+}
+
+func (n *CallNode) AddArgument(arg ASTNode) {
+  n.arguments = append(n.arguments, arg)
+}
+
+func (n *CallNode) Evaluate(runtime *Runtime) *Value {
+  // TODO
+  return NIL
+}
+
+func (n *CallNode) Describe(indent int) {
+  fmt.Printf("# %sCALL `%s` WITH ARGS:\n", strings.Repeat("  ", indent), n.ident)
+  for _, arg := range n.arguments {
+    arg.Describe(indent+1)
+  }
+}
+
 // EXPRESSION
 
 type Operator string
