@@ -6,7 +6,7 @@ import (
   "io"
   "io/ioutil"
   "bufio"
-  "goon"
+  "goon/lib"
 )
 
 func main() {
